@@ -1,0 +1,78 @@
+<div>Teachable Machine Image Model</div> 
+<input type="file" accept="image/*" onchange="loadImage(event)">
+<div id="image-container"></div>
+<div id="label-container"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
+
+<script type="text/javascript">
+    // the link to your model provided by Teachable Machine export panel
+    const URL = "https://teachablemachine.withgoogle.com/models/BWYl8bhjU/";
+
+    let model, imageElement, labelContainer, maxPredictions;
+
+    // Load the image model
+    async function init() {
+        const modelURL = URL + "model.json";
+        const metadataURL = URL + "metadata.json";
+
+        try {
+            // Load the model and metadata
+            console.log("Loading model...");
+            model = await tmImage.load(modelURL, metadataURL);
+            maxPredictions = model.getTotalClasses();
+            console.log("Model loaded successfully!");
+
+            // Create label container for predictions
+            labelContainer = document.getElementById("label-container");
+            for (let i = 0; i < maxPredictions; i++) {
+                labelContainer.appendChild(document.createElement("div"));
+            }
+        } catch (error) {
+            console.error("Error loading model:", error);
+        }
+    }
+
+    // Load image from file input and predict
+    function loadImage(event) {
+        const reader = new FileReader();
+        reader.onload = function () {
+            // Create an image element
+            imageElement = new Image();
+            imageElement.src = reader.result;
+            imageElement.onload = function() {
+                console.log("Image loaded, running prediction...");
+
+                // Display image
+                const imageContainer = document.getElementById("image-container");
+                imageContainer.innerHTML = "";
+                imageContainer.appendChild(imageElement);
+
+                // Run prediction
+                predict(imageElement);
+            };
+        };
+        reader.readAsDataURL(event.target.files[0]);
+    }
+
+    // Run the image through the model for prediction
+    async function predict(image) {
+        try {
+            console.log("Predicting...");
+            // Predict the class of the image
+            const prediction = await model.predict(image);
+            console.log("Prediction results:", prediction);
+
+            for (let i = 0; i < maxPredictions; i++) {
+                const classPrediction = prediction[i].className + ": " + prediction[i].probability.toFixed(2);
+                labelContainer.childNodes[i].innerHTML = classPrediction;
+            }
+        } catch (error) {
+            console.error("Error during prediction:", error);
+        }
+    }
+
+    // Initialize model when page loads
+    init();
+</script>
